@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>JB Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  body { margin:0; font-family:sans-serif; background:#f5faff; color:#1a2166; }
+  nav.sidebar { position: fixed; top:0; left:0; width:220px; height:100vh; background:#192734; padding:40px 0; display: flex; flex-direction: column; user-select: none; z-index: 10;}
+  nav.sidebar h2 { margin:0 0 48px 30px; color:#fff; font-size:22px; letter-spacing:2px; font-weight:700;}
+  nav.sidebar a { color:#bbcde5; text-decoration:none; padding:12px 28px; font-size:16px; border-left:4px solid transparent; cursor:pointer; transition:all 0.2s; white-space:nowrap;}
+  nav.sidebar a:hover, nav.sidebar a.active { background:#223554; color:#e0ebfa; border-left:4px solid #278ff3;}
+  main.main { margin-left:220px; padding:30px 40px; min-height:100vh; box-sizing:border-box;}
+  main.main > section { display:none; }
+  main.main > section.active { display:block; }
+  h1 { font-size:28px; margin-bottom:22px; font-weight:700; color:#223450; }
+  form { max-width: 400px; background:#fff; padding:30px 28px; border-radius:16px; user-select: none; box-shadow: 0 2px 12px rgba(21,54,96,0.10);}
+  .form-group { margin-bottom: 18px; }
+  label { display:block; margin-bottom:8px; font-weight:700; font-size:15px; color:#314c7f; }
+  input[type="text"], input[type="password"], textarea { width:100%; padding:10px 14px; font-size:15px; border-radius:8px; border:1.5px solid #dbe6fc; outline-offset:3px; font-family: inherit;}
+  input[readonly], textarea[readonly] { background:#ecf2fa; color:#697baa; }
+  input[type="text"]:focus, input[type="password"]:focus, textarea:focus { border-color:#278ff3; background:#e5f2ff;}
+  textarea { min-height:48px; resize:vertical;}
+  .radio-group { display:flex; gap:18px; margin-top:5px;}
+  .radio-group label { cursor:pointer; font-size:15px;}
+  .radio-group input { width:17px; height:17px; margin-right:5px; vertical-align:middle;}
+  .error-msg { color:#cc2a1d; font-weight:600; margin-bottom:14px; font-size:14px;}
+  button, .btn-small, #search button, #btnSelectAll, #btnRejectAll  {user-select:none; padding:8px 18px; width:auto; height:34px; min-width:70px; font-size:15px; font-weight:700; border-radius:18px; border:none; background:#278ff3; color:white; cursor:pointer; transition:background .3s; display:inline-block;}
+  button:disabled, .btn-small:disabled { background:#aacdff; }
+  button:not(:disabled):hover { background: #1a5fcc;}
+  .table-container { margin-top:24px; background:#fff; padding:16px 10px; box-shadow:0 3px 15px rgba(21,54,96,0.10); border-radius:18px;}
+  table { width:100%; border-collapse:collapse; table-layout:fixed;}
+  th, td { padding:10px 7px; font-size:13px; color:#232448; border-bottom:1.4px solid #d5def5; word-wrap:break-word; vertical-align:middle;}
+  th { font-weight:900; background:#e6efff; color:#1b3668;}
+  tbody tr { cursor:pointer; transition:background .2s; }
+  tbody tr:hover:not(.green-row):not(.red-row) { background:#e8f4ff;}
+  tbody tr.green-row { background:#d6f4d5; color:#215e27; font-weight:700;}
+  tbody tr.red-row { background:#ffeae2; color:#b21818; font-weight:700;}
+  tbody tr.green-row:hover { background:#c6ebc5; }
+  tbody tr.red-row:hover { background:#fed3bc; }
+  .pagination { margin-top:24px; display:flex; gap:6px; justify-content:center; flex-wrap:nowrap;}
+  .pagination button { font-size:12px; width:26px; height:26px; padding:0; border-radius:6px; box-shadow: 0 2px 6px rgba(33,81,254,0.30); color:#1f3c9e; }
+  .pagination button:disabled { color:#a1abc7; background:#ccd4f7; cursor:default;}
+  .pagination button:not(:disabled):hover { background:#2062dd; color:#fff;}
+  .pagination .current-page { font-size:12px; width:26px; height:26px; background:#1b3c98; color:#fff;}
+  #btnSelectAll, #btnRejectAll { margin-top:10px; margin-bottom:10px; }
+  #chatbotToggle {width:62px; height:62px; font-size:14px; text-align:center; letter-spacing:0.04em; background:#278ff3; color:#fff; border-radius:50%; position:fixed; bottom:25px; right:25px; line-height:62px; box-shadow: 0 6px 16px rgba(39,143,243,0.40); cursor:pointer; user-select:none; z-index:900;}
+  #chatbotToggle:hover { background:#1a5fcc;}
+  #chatbot {position:fixed; bottom:95px; right:25px; width:360px; height:430px; background:#fff; border-radius:14px; box-shadow:0 8px 32px rgba(10,40,110,0.18); display:none; flex-direction:column; z-index:1000;}
+  #chatbotHeader { background:#278ff3; color:white; font-weight:800; font-size:18px; padding:8px 20px 6px 16px; border-radius:14px 14px 0 0; user-select:none; position:relative;}
+  #chatbotClose { position:absolute;right:18px;top:50%;transform:translateY(-50%); font-size:18px; cursor:pointer; color:rgba(255,255,255,0.8);}
+  #chatbotClose:hover { color:#fff;}
+  #chatbotMessages { flex:1; background:#eaf5ff; padding:15px 16px 10px 14px; font-size:14px; color:#233b68; overflow-y:auto; line-height:1.36;}
+  .chatMessage { margin-bottom:10px; max-width:78%; padding:8px 14px; border-radius:14px; word-break:break-word; white-space:pre-line;}
+  .chatMessage.user { background:#278ff3; color:#fff; margin-left:auto; font-weight:700;}
+  .chatMessage.bot { background:#d4e6fa; color:#1c2b4a; margin-right:auto; font-weight:600;}
+  #chatbotInputArea { display:flex; align-items:center; padding:10px 15px; background:white; border-top:2px solid #b1d3ff;}
+  #chatbotInput { flex:1; padding:8px 10px; border-radius:14px; font-size:14px; border:1.2px solid #b1c8fa;}
+  #chatbotSend { margin-left:10px; padding:7px 16px;}
+  @media(max-width:900px){
+    main.main { margin-left:0!important; padding:70px 5vw 30px!important;}
+    nav.sidebar { width:100%; height:56px; flex-direction:row; overflow-x: auto; padding:0 10px;}
+    nav.sidebar h2 { display:none;}
+    nav.sidebar a { font-size:13px;}
+    #chatbot { width:88vw!important; }
+  }
+  #loginScreen { position:fixed; top:0; left:0; width:100vw; height:100vh; background:#f5faff; z-index:40; display:flex; justify-content:center; align-items:center;}
+  #loginBox { padding:32px 34px 18px 34px; background:#fff; border-radius:16px; box-shadow:0 8px 32px rgba(10,40,110,0.10); width:340px; max-width:90vw; }
+  #loginBox h1 { font-size:24px; margin-bottom:22px; color:#223450; text-align:center;}
+  #login-error { color:#cc2a1d; font-weight:600; margin-bottom:14px; font-size:15px; text-align:center;}
+  #loginBox button { width:100%; }
+</style>
+</head>
+<body>
+<div id="loginScreen">
+  <form id="loginBox" autocomplete="off">
+    <h1>JB Portal Login</h1>
+    <div id="login-error"></div>
+    <div class="form-group">
+      <label for="loginUser">Username</label>
+      <input type="text" id="loginUser" name="loginUser" required autocomplete="off" placeholder="Enter Username" />
+    </div>
+    <div class="form-group">
+      <label for="loginPass">Password</label>
+      <input type="password" id="loginPass" name="loginPass" required autocomplete="off" placeholder="Enter Password" />
+    </div>
+    <button type="submit">Sign in</button>
+  </form>
+</div>
+<nav class="sidebar" style="display:none;">
+  <h2>JB Portal</h2>
+  <a id="nav-home" href="#" onclick="navigate('home')">Order</a>
+  <a id="nav-candidate" href="#" onclick="navigate('candidate')">Candidate Overview</a>
+  <a id="nav-request" href="#" onclick="navigate('request')">Request Summary</a>
+  <a id="nav-results" href="#" onclick="navigate('results')">Results</a>
+  <a id="nav-search" href="#" onclick="navigate('search')">Search</a>
+</nav>
+<main class="main" style="display:none;">
+  <section id="page-home">
+    <h1>Order Page</h1>
+    <form id="orderForm" autocomplete="off">
+      <div class="error-msg" id="order-error"></div>
+      <div class="form-group">
+        <label for="firstName">First Name (letters and spaces only)</label>
+        <input id="firstName" name="firstName" required pattern="[A-Za-z ]+" title="Only letters and spaces" onkeypress="return onlyAlphabets(event)" />
+      </div>
+      <div class="form-group">
+        <label for="lastName">Last Name (any text)</label>
+        <input id="lastName" name="lastName" required />
+      </div>
+      <div class="form-group">
+        <label for="aadharId">Aadhaar ID</label>
+        <input id="aadharId" name="aadharId" required />
+      </div>
+      <button type="submit">Save</button>
+    </form>
+  </section>
+  <section id="page-candidate">
+    <h1>Candidate Overview</h1>
+    <div class="table-container">
+      <table id="candidateTable">
+        <thead>
+          <tr><th>First Name</th><th>Last Name</th><th>Aadhaar ID</th><th>Criminal</th><th>Hire</th><th>PA Status</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="pagination" class="pagination"></div>
+  </section>
+  <section id="page-subject">
+    <a href="#" class="back-link" onclick="goBack()">← Back to Candidate Overview</a>
+    <h1>Edit Candidate Info</h1>
+    <form id="subjectForm">
+      <div class="form-group">
+        <label>First Name</label>
+        <input id="subjFirst" />
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input id="subjLast" />
+      </div>
+      <div class="form-group">
+        <label>Aadhaar ID</label>
+        <input id="subjAadhar" />
+      </div>
+      <div class="form-group">
+        <label>Criminal Record</label>
+        <div class="radio-group">
+          <input type="radio" id="criminalYes" name="criminal" value="Yes" />
+          <label for="criminalYes">Yes</label>
+          <input type="radio" id="criminalNo" name="criminal" value="No" />
+          <label for="criminalNo">No</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Good Hire</label>
+        <div class="radio-group">
+          <input type="radio" id="hireYes" name="hire" value="Yes" />
+          <label for="hireYes">Yes</label>
+          <input type="radio" id="hireNo" name="hire" value="No" />
+          <label for="hireNo">No</label>
+        </div>
+      </div>
+      <button type="submit">Save</button>
+    </form>
+    <div id="subjectMessage"></div>
+  </section>
+  <section id="page-request">
+    <h1>Request Summary</h1>
+    <p>No requests available.</p>
+  </section>
+  <section id="page-results">
+    <h1>Results</h1>
+    <div>
+      <h3>Meets Requirements</h3>
+      <ul id="meetsList"></ul>
+      <button id="btnSelectAll" class="btn-small">Select All</button>
+      <div id="meetsMsg"></div>
+    </div>
+    <div>
+      <h3>Does Not Meet</h3>
+      <ul id="doesntList"></ul>
+      <button id="btnRejectAll" class="btn-small">Reject All</button>
+      <div id="doesntMsg"></div>
+    </div>
+  </section>
+  <section id="page-search">
+    <h1>Search Candidates</h1>
+    <form id="searchForm">
+      <div class="form-group">
+        <label>Name (Lastname, Firstname)</label>
+        <input id="searchName" placeholder="Lastname, Firstname" />
+      </div>
+      <div class="form-group">
+        <label>Aadhaar ID</label>
+        <input id="searchAadhar" placeholder="Aadhaar ID" />
+      </div>
+      <button type="submit">Search</button>
+    </form>
+    <div id="searchMsg"></div>
+    <div id="chatbotToggle" class="chatbot-toggle" title="Chat with Candy">Chat Candy</div>
+    <div id="chatbot">
+      <div id="chatbotHeader">Chat Candy<span id="chatbotClose">&times;</span></div>
+      <div id="chatbotMessages"></div>
+      <div id="chatbotInputArea">
+        <input id="chatbotInput" placeholder="Ask me anything..." autocomplete="off" />
+        <button id="chatbotSend">Send</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // ------- Portal State & Utility functions ------
+let orders = [];
+let subjectInfo = {}, paStatus = {};
+let selectedCandidates = new Set(), rejectedCandidates = new Set();
+let currentIndex = null, itemsPerPage = 35, currentPage = 1, totalPages = 0;
+let currentUser = "";
+
+// Login logic and state
+function showMainApp() {
+  document.getElementById('loginScreen').style.display = "none";
+  document.querySelector("nav.sidebar").style.display = "";
+  document.querySelector("main.main").style.display = "";
+  loadData(); navigate('home'); renderCandidates(); renderResults();
+}
+document.getElementById("loginBox").addEventListener("submit",function(e){
+  e.preventDefault();
+  let user = document.getElementById("loginUser").value.trim();
+  let pass = document.getElementById("loginPass").value;
+  let errorDiv = document.getElementById("login-error");
+  if(user === "Redtigerrec" && pass === "Jb@1234"){
+    errorDiv.textContent = "";
+    currentUser = "Redtigerrec";
+    ensureCandidates();
+    setTimeout(showMainApp, 200);
+  } else {
+    errorDiv.textContent = "Invalid username or password. Please check your credentials.";
+  }
+});
+function randomString() {const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";let adh = "";for (let i = 0; i < 12; i++) {adh += Math.random() < 0.6 ? Math.floor(Math.random() * 10) : alphabet[Math.floor(Math.random() * alphabet.length)];}return adh;}
+function generateCandidates() {
+  const firstNames = ["Amit","Anjali","Ravi","Meera","Priya","Surya","Nikhil","Neha","Rajesh","Rekha"];
+  const lastNames = ["Sharma","Patel","Reddy","Gupta","Singh","Jha","Saxena","Desai","Kumar","Joshi"];
+  orders = []; subjectInfo = {}; paStatus = {};
+  for(let i=0;i<100;i++){
+    let fn = firstNames[Math.floor(Math.random()*firstNames.length)]; let ln = lastNames[Math.floor(Math.random()*lastNames.length)];
+    let aid = randomString(); orders.push({firstName:fn,lastName:ln,aadharId:aid});
+    subjectInfo[i]={hasCriminal: Math.random()<0.15?"Yes":"No",goodHire: Math.random()<0.5?"Yes":"No"};
+    if(subjectInfo[i].goodHire==="No") paStatus[i]=null;
+  }
+  selectedCandidates.clear(); rejectedCandidates.clear();
+  currentPage=1; totalPages=Math.ceil(orders.length/itemsPerPage); saveData();
+}
+function saveData() {
+  localStorage.setItem('orders', JSON.stringify(orders));
+  localStorage.setItem('subjectInfo', JSON.stringify(subjectInfo));
+  localStorage.setItem('paStatus', JSON.stringify(paStatus));
+}
+function loadData() {
+  let o = localStorage.getItem('orders');
+  orders = o ? JSON.parse(o) : [];
+  subjectInfo = JSON.parse(localStorage.getItem('subjectInfo')||'{}');
+  paStatus = JSON.parse(localStorage.getItem('paStatus')||'{}');
+  totalPages = Math.ceil(orders.length/itemsPerPage);
+  if(orders.length===0) generateCandidates();
+}
+function ensureCandidates() {
+  let o = localStorage.getItem('orders');
+  if (!o) generateCandidates();
+}
+function onlyAlphabets(e){ return /^[a-zA-Z ]$/.test(String.fromCharCode(e.which||e.keyCode));}
+function navigate(page) {
+  document.querySelectorAll('main.main > section').forEach(s=>s.classList.remove('active'));
+  let mainSection = document.getElementById('page-'+page); if (mainSection) mainSection.classList.add('active');
+  document.querySelectorAll('nav.sidebar a').forEach(a=>a.classList.remove('active'));
+  let navLink = document.getElementById('nav-'+page); if (navLink) navLink.classList.add('active');
+  switch(page){
+    case 'candidate': renderCandidates(); break;
+    case 'results': renderResults(); break;
+    case 'search': resetSearch(); break;
+    case 'home': clearError('order-error'); break;
+  }
+  clearAllMessages();
+}
+function clearError(id){ let el=document.getElementById(id); if(el) el.textContent=''; }
+function clearAllMessages(){['meetsMsg','doesntMsg','searchMsg','order-error','subjectMessage'].forEach(id=>{let el=document.getElementById(id); if(el) el.textContent='';});}
+function resetSearch(){document.getElementById('searchForm').reset();document.getElementById('searchMsg').textContent='';}
+document.getElementById('orderForm').addEventListener('submit', e=>{
+  e.preventDefault(); clearError('order-error');
+  const fn = document.getElementById('firstName').value.trim(),ln=document.getElementById('lastName').value.trim(),aid=document.getElementById('aadharId').value.trim();
+  if(!/^[A-Za-z ]+$/.test(fn)){
+    document.getElementById('order-error').textContent = "First Name: letters and spaces only."; return;}
+  orders.push({firstName:fn,lastName:ln,aadharId:aid});
+  let idx = orders.length-1; subjectInfo[idx]={hasCriminal:"No",goodHire:"No"}; paStatus[idx]=null;
+  saveData(); document.getElementById('orderForm').reset();
+  totalPages = Math.ceil(orders.length/itemsPerPage); currentPage=totalPages; navigate('candidate');
+});
+function renderCandidates() {
+  totalPages = Math.ceil(orders.length/itemsPerPage); currentPage = Math.max(1, Math.min(currentPage,totalPages));
+  const tbody = document.querySelector('#candidateTable tbody');
+  const start = (currentPage-1)*itemsPerPage, end = Math.min(orders.length,start+itemsPerPage);
+  let html = ''; for(let i=start;i<end;i++){
+    const c=orders[i],s=subjectInfo[i],p=paStatus[i];
+    let cls = s.goodHire==='Yes'?'green-row':s.goodHire==='No'?'red-row':'';
+    html+=`<tr class="${cls}" data-index="${i}" onclick="openCandidate(${i})">`;
+    html+=`<td>${c.firstName}</td><td>${c.lastName}</td><td>${c.aadharId}</td><td>${s.hasCriminal}</td><td>${s.goodHire}</td><td>`;
+    if(s.goodHire==='No'){
+      if(p){ html+=`<div class="pa-info">PA sent<br>${p.sent}<br>Expected AA: ${p.expected}</div>`; }
+      else { html+=`<button class="pa-btn" onclick="sendPA(event,${i})">Send PA</button>`; }
+    }
+    html+='</td></tr>';
+  }
+  tbody.innerHTML = html; renderPagination();
+}
+function renderPagination(){
+  const cont = document.getElementById('pagination');
+  let html=''; html+=`<button ${currentPage===1?'disabled':''} onclick="changePage(1)">«</button>`;
+  html+=`<button ${currentPage===1?'disabled':''} onclick="changePage(${currentPage-1})">‹</button>`;
+  let startPage=Math.max(1,currentPage-3), endPage=Math.min(totalPages,currentPage+3);
+  for(let i=startPage;i<=endPage;i++)
+    html+=`<button class="${i===currentPage?'current-page':''}" onclick="changePage(${i})">${i}</button>`;
+  html+=`<button ${currentPage===totalPages?'disabled':''} onclick="changePage(${currentPage+1})">›</button>`;
+  html+=`<button ${currentPage===totalPages?'disabled':''} onclick="changePage(${totalPages})">»</button>`;
+  cont.innerHTML=html;
+}
+function changePage(p){ if(p<1||p>totalPages) return; currentPage=p; renderCandidates(); }
+function openCandidate(idx){
+  currentIndex=idx;
+  const c=orders[idx],s=subjectInfo[idx];
+  document.getElementById('subjFirst').value = c.firstName;
+  document.getElementById('subjLast').value = c.lastName;
+  document.getElementById('subjAadhar').value = c.aadharId;
+  document.getElementById('criminalYes').checked = s.hasCriminal==="Yes";
+  document.getElementById('criminalNo').checked = s.hasCriminal==="No";
+  document.getElementById('hireYes').checked = s.goodHire==="Yes";
+  document.getElementById('hireNo').checked = s.goodHire==="No";
+  navigate('subject');
+}
+document.getElementById('subjectForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  if(currentIndex===null) return;
+  let newFirst = document.getElementById('subjFirst').value.trim();
+  let newLast = document.getElementById('subjLast').value.trim();
+  let newAadhar = document.getElementById('subjAadhar').value.trim();
+  if(!/^[A-Za-z ]+$/.test(newFirst)){
+    document.getElementById('subjectMessage').textContent = "First Name: letters and spaces only.";
+    return;
+  }
+  if(!newAadhar){
+    document.getElementById('subjectMessage').textContent = "Aadhaar ID cannot be empty.";
+    return;
+  }
+  orders[currentIndex].firstName = newFirst;
+  orders[currentIndex].lastName = newLast;
+  orders[currentIndex].aadharId = newAadhar;
+  subjectInfo[currentIndex].hasCriminal = document.querySelector('input[name="criminal"]:checked').value;
+  subjectInfo[currentIndex].goodHire = document.querySelector('input[name="hire"]:checked').value;
+  if(subjectInfo[currentIndex].goodHire==="Yes") paStatus[currentIndex]=null;
+  saveData(); renderCandidates();
+  document.getElementById('subjectMessage').textContent = "Candidate info updated.";
+  setTimeout(() => { navigate('candidate'); document.getElementById('subjectMessage').textContent = ""; }, 600);
+});
+function goBack(){navigate('candidate');}
+function sendPA(e,idx){
+  if(e && e.stopPropagation) e.stopPropagation();
+  if(subjectInfo[idx].goodHire === "Yes") return; // Prevent PA if hire=Yes
+  if(paStatus[idx]) return;
+  const now = new Date();
+  const expected = new Date(now.getTime() + 20*24*60*60*1000);
+  const fmt = d=>`${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}/${d.getFullYear()}`;
+  paStatus[idx]={sent:fmt(now), expected:fmt(expected)};
+  saveData(); renderCandidates();
+}
+function renderResults(){
+  let meets=[], rejects=[]; selectedCandidates.clear(); rejectedCandidates.clear();
+  for(let i=0;i<orders.length;i++){
+    if(!subjectInfo[i]) continue;
+    if(subjectInfo[i].goodHire==='Yes'){
+      meets.push(i); selectedCandidates.add(i);}
+    else { rejects.push(i); rejectedCandidates.add(i);}
+  }
+  document.getElementById('meetsList').innerHTML = meets.length ? meets.map(i=>`<li>${orders[i].lastName}, ${orders[i].firstName}</li>`).join('') : '<li>No candidates</li>';
+  document.getElementById('doesntList').innerHTML = rejects.length ? rejects.map(i=>`<li>${orders[i].lastName}, ${orders[i].firstName}</li>`).join('') : '<li>No candidates</li>';
+}
+document.getElementById('btnSelectAll').onclick=()=>{ selectedCandidates.clear(); document.getElementById('meetsList').innerHTML=''; document.getElementById('meetsMsg').innerText='All selected 🙂'; }
+document.getElementById('btnRejectAll').onclick=()=>{ rejectedCandidates.clear(); document.getElementById('doesntList').innerHTML=''; document.getElementById('doesntMsg').innerText='All rejected ☹️'; }
+document.getElementById('searchForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = document.getElementById('searchName').value.trim();
+  const aadhar = document.getElementById('searchAadhar').value.trim();
+  const msgEl = document.getElementById('searchMsg');
+  msgEl.textContent='';
+ let idxName = name ? candidateIdx(name,'name') : -1;
+  let idxAadhar = aadhar ? candidateIdx(aadhar,'aadhar') : -1;
+  if(name && aadhar){
+    if(idxName!==-1 && idxAadhar!==-1 && idxName===idxAadhar){ msgEl.textContent = buildStatus(idxName);}
+    else{msgEl.textContent = 'You have entered different candidates details.';}
+    return;
+  }
+  let idx = name ? idxName : aadhar ? idxAadhar : -1;
+  if(idx===-1){msgEl.textContent='No matching candidate found.';return;}
+  msgEl.textContent=buildStatus(idx);
+});
+// ENHANCED: Aadhaar search is now case-insensitive and any length.
+function candidateIdx(val,type='name'){
+  val=val.trim().toLowerCase();
+  if(type==='aadhar')
+    return orders.findIndex(o=>o.aadharId && o.aadharId.toLowerCase()===val);
+  if(type==='name')
+    return orders.findIndex(o=>(`${o.lastName}, ${o.firstName}`.toLowerCase()===val));
+  return -1;
+}
+function buildStatus(idx){
+  const c=orders[idx], s=subjectInfo[idx], p=paStatus[idx];
+  let txt=`${c.lastName}, ${c.firstName} `;
+  txt+=(s.hasCriminal==='Yes'?'has criminal record':'has no criminal record')+' and ';
+  txt+=(s.goodHire==='Yes'?'is good to hire.':'is not good to hire.');
+  if(selectedCandidates.has(idx)) txt+=' (Candidate selected)';
+  else if(rejectedCandidates.has(idx)) txt+=' (Candidate rejected)';
+  if(p) txt+=`\nPA sent: ${p.sent}\nExpected AA: ${p.expected}`;
+  return txt;
+}
+
+// --- Advanced Chatbot ---
+const chatbotToggle=document.getElementById('chatbotToggle');
+const chatbotWindow=document.getElementById('chatbot');
+const chatbotClose=document.getElementById('chatbotClose');
+const chatbotMessages=document.getElementById('chatbotMessages');
+const chatbotInput=document.getElementById('chatbotInput');
+const chatbotSend=document.getElementById('chatbotSend');
+const greetings = ["hi", "hello", "hey", "hola", "namaste", "greetings", "good day"];
+const farewells = ["bye", "goodbye", "see you", "farewell"];
+let paCandidateConfirm = null;
+
+
+
+chatbotToggle.onclick=()=>{ chatbotWindow.style.display=chatbotWindow.style.display==='flex'?'none':'flex';
+  if(chatbotWindow.style.display==='flex') chatbotInput.focus();
+  if(chatbotMessages.childElementCount===0) botMsg("Hello! 👋 Ask about Aadhaar, Name, send PA, or say 'help'. Type anything!");};
+chatbotClose.onclick=()=>{ chatbotWindow.style.display='none'; };
+chatbotSend.onclick=sendChat;
+chatbotInput.onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();sendChat();} }
+
+function userMsg(text){ let div=document.createElement('div'); div.className='chatMessage user'; div.textContent=text; chatbotMessages.appendChild(div); chatbotMessages.scrollTop=chatbotMessages.scrollHeight; }
+function botMsg(text){ let div=document.createElement('div'); div.className='chatMessage bot'; div.textContent=text; chatbotMessages.appendChild(div); chatbotMessages.scrollTop=chatbotMessages.scrollHeight; }
+
+function sendChat() {
+  const msg = chatbotInput.value.trim();
+  if(!msg) return;
+  userMsg(msg);
+  chatbotInput.value = '';
+  setTimeout(() => processChatBot(msg), 400);
+}
+function findCandidateByAadhar(aadhar) {
+  if (!aadhar) return -1;
+  aadhar = aadhar.trim().toLowerCase();
+  return orders.findIndex(o => o.aadharId && o.aadharId.toLowerCase() === aadhar);
+}
+function findCandidateByName(name) {
+  if (!name) return -1;
+  name = name.trim().toLowerCase();
+  return orders.findIndex(o => (`${o.lastName}, ${o.firstName}`).toLowerCase() === name);
+}
+function extractAadhaar(text) {
+  // Search for all valid Aadhaar-like (any length, alphanum) tokens in input
+  let words = text.match(/[a-z0-9]{5,}/ig) || [];
+  for (let x of words) if (findCandidateByAadhar(x) !== -1) return x;
+  return null;
+}
+function extractName(text) {
+  // Tries to extract 'Lastname, Firstname' from text (using quotes if present)
+  let m = text.match(/['"]([A-Za-z ]+, ?[A-Za-z ]+)['"]/);
+  if (m && findCandidateByName(m[1]) !== -1) return m[1];
+  // Otherwise, search for <Lastname, Firstname> as substrings
+  let possible = text.match(/[A-Za-z]+, *[A-Za-z]+/g);
+  if (possible) for(let name of possible) if(findCandidateByName(name) !== -1) return name;
+  return null;
+}
+function processChatBot(input) {
+  let text = input.trim();
+  let lower = text.toLowerCase();
+
+  // Greetings
+  if (greetings.some(g => lower.startsWith(g))) {
+    botMsg("Hi! 😊 How can I help you? Ask about candidates, PA, Aadhaar, status, or say 'help'.");
+    return;
+  }
+  if (farewells.some(g => lower.includes(g))) {
+    botMsg("Goodbye! Have a great day!");
+    return;
+  }
+  if (lower.includes("how are you")) {
+    botMsg("I'm doing well, thank you! How can I assist you with JB Portal?");
+    return;
+  }
+
+  // Help
+  if (lower.includes("help") || lower.startsWith("can you") || lower.includes("usage") || lower.includes("example")) {
+    botMsg("Try:\n- Who is DFROZOM5\n- Give details for 'Singh, Ravi'\n- Can you give me Aadhar details of 'Lastname, Firstname'\n- Can you give me Name details of 'AadhaarID'\n- Send PA to 'Lastname, Firstname' or 'AadhaarID'\n- Hi, Bye");
+    return;
+  }
+
+  // PA confirmation
+  if (paCandidateConfirm) {
+    let ans = lower;
+    let idx = paCandidateConfirm.idx;
+    let c = orders[idx];
+    if (ans === "yes" || ans === "y") {
+      if (subjectInfo[idx].goodHire === "Yes") {
+        botMsg(`"${c.lastName}, ${c.firstName}" is already good to Hire so PA can't be sent.`);
+        paCandidateConfirm = null;
+        return;
+      }
+      sendPA(null, idx);
+      botMsg(`PA sent to "${c.lastName}, ${c.firstName}" (Aadhaar: ${c.aadharId}).`);
+    } else {
+      botMsg("Ok, will not send.");
+    }
+    paCandidateConfirm = null;
+    return;
+  }
+
+  // Parse and show full candidate details from text
+  let aadhaar = extractAadhaar(text);
+  let name = extractName(text);
+
+  if (aadhaar) {
+    let idx = findCandidateByAadhar(aadhaar);
+    if (idx !== -1) {
+      botMsg("Here are the details:\n" + buildStatus(idx));
+      return;
+    }
+  }
+  if (name) {
+    let idx = findCandidateByName(name);
+    if (idx !== -1) {
+      botMsg("Here are the details:\n" + buildStatus(idx));
+      return;
+    }
+  }
+
+  // PA command from text
+  if (/send pa to/i.test(text)) {
+    // Try to extract Aadhaar or Name after 'send pa to'
+    let match = text.match(/send pa to\s+['"]?([\w, ]+)['"]?/i);
+    if (match && match[1]) {
+      let val = match[1].trim();
+      let idx = findCandidateByAadhar(val);
+      if (idx === -1) idx = findCandidateByName(val);
+      if (idx === -1) { botMsg("No candidate found to send PA."); return; }
+      let cand = orders[idx];
+      paCandidateConfirm = { idx: idx };
+      botMsg(`Are you sure you want to send PA to "${cand.lastName}, ${cand.firstName}" with "${cand.aadharId}" ? (Yes/No)`);
+      return;
+    }
+  }
+
+  // Fallback for any message containing an Aadhaar or Name we know
+  let anyAadhaar = extractAadhaar(text);
+  if (anyAadhaar) {
+    let idx = findCandidateByAadhar(anyAadhaar);
+    if (idx !== -1) {
+      botMsg("Candidate details found:\n" + buildStatus(idx));
+      return;
+    }
+  }
+  let anyName = extractName(text);
+  if (anyName) {
+    let idx = findCandidateByName(anyName);
+    if (idx !== -1) {
+      botMsg("Candidate details found:\n" + buildStatus(idx));
+      return;
+    }
+  }
+  // Otherwise, fallback generic help message
+  botMsg("Sorry, I did not understand. Type 'help' for usage or simply mention part of Aadhaar or name in your query.");
+}
+
+window.openCandidate = openCandidate;
+window.goBack = goBack;
+window.sendPA = sendPA;
+window.changePage = changePage;
+</script>
+</body>
+</html>
